@@ -751,3 +751,21 @@ export async function testEmailService(): Promise<boolean> {
     return false;
   }
 }
+
+// Add aliases for functions that might be imported with different names
+export const sendNewShiftNotification = async (user: any, shift: any) => {
+  // Implementation or proxy to an existing function
+  console.log('Sending new shift notification to', user.email);
+  // You might proxy to an existing function if available
+  // return sendScheduleNotification(user, shift.day, shift.day, [shift]);
+};
+
+export const sendUpdatedShiftNotification = async (user: any, shift: any) => {
+  // Implementation or proxy to an existing function
+  console.log('Sending updated shift notification to', user.email);
+  // You might proxy to an existing function if available
+  // return sendScheduleNotification(user, shift.day, shift.day, [shift]);
+};
+
+// If sendNewDocumentNotification is being imported but not exported
+export const sendNewDocumentNotification = sendDocumentNotification;

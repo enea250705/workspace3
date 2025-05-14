@@ -1,16 +1,19 @@
 {
-  "extends": "../tsconfig.json",
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ES2020",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "noImplicitAny": false,
-    "strictFunctionTypes": false,
-    "outDir": "../dist",
     "skipLibCheck": true,
-    "types": ["node", "express"]
+    "outDir": "../dist",
+    "typeRoots": ["./node_modules/@types", "./types"],
+    "paths": {
+      "@shared/*": ["../shared/*"]
+    },
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": ["./**/*.ts"],
   "exclude": ["node_modules"]
