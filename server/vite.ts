@@ -83,51 +83,107 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  // First try the standard dist/public path
-  const distPath = path.resolve(process.cwd(), "server", "public");
-  
-  // Vercel paths may be different, so we check multiple options
-  const possiblePaths = [
-    distPath,
-    path.resolve(process.cwd(), "dist/public"),
-    path.resolve(process.cwd(), "dist"),
-    path.resolve(process.cwd(), "public")
-  ];
-  
-  // Find the first path that exists
-  const validPath = possiblePaths.find(p => fs.existsSync(p));
-  
-  if (!validPath) {
-    const error = `ERROR: Could not find any valid build directory. Checked: ${possiblePaths.join(', ')}`;
-    log(error, "server");
-    throw new Error(error);
-  }
-  
-  log(`Using static files from: ${validPath}`, "server");
-  app.use(express.static(validPath));
-  
-  // We also set up a path for the index.html
-  let indexHtmlPath = path.resolve(validPath, "index.html");
-  
-  // If index.html doesn't exist in the validPath, try to find it
-  if (!fs.existsSync(indexHtmlPath)) {
-    const possibleIndexPaths = possiblePaths.map(p => path.resolve(p, "index.html"));
-    const validIndexPath = possibleIndexPaths.find(p => fs.existsSync(p));
+  try {
+    // First try the standard dist/public path
+    const distPath = path.resolve(process.cwd(), "dist", "public");
     
-    if (validIndexPath) {
-      indexHtmlPath = validIndexPath;
-      log(`Found index.html at: ${indexHtmlPath}`, "server");
-    } else {
-      log(`WARNING: Could not find index.html in any directory`, "server");
+    // Render paths - look directly in dist folder
+    const possiblePaths = [
+      distPath,
+      path.resolve(process.cwd(), "dist"),
+      path.resolve(process.cwd(), "public"),
+      path.resolve(process.cwd(), "client/dist"),
+      path.resolve(process.cwd(), "client/build")
+    ];
+    
+    // Log the paths we're checking
+    log(`Checking for static files in: ${possiblePaths.join(', ')}`, "server");
+    
+    // Find the first path that exists
+    const validPath = possiblePaths.find(p => {
+      const exists = fs.existsSync(p);
+      log(`Path ${p} exists: ${exists}`, "server");
+      return exists;
+    });
+    
+    if (!validPath) {
+      // Don't throw, just log and serve a simple message
+      log(`WARNING: Could not find any valid build directory. Using fallback.`, "server");
+      
+      // Set up simple middleware to handle all requests
+      app.use('*', (_req: Request, res: Response) => {
+        res.status(200).send(`
+          <html>
+            <head><title>Da Vittorino App</title></head>
+            <body>
+              <h1>Server is running</h1>
+              <p>The server is running, but static files are not available. Please check build configuration.</p>
+            </body>
+          </html>
+        `);
+      });
+      
+      return;
     }
+    
+    log(`Using static files from: ${validPath}`, "server");
+    
+    // Serve static files with proper caching
+    app.use(express.static(validPath, {
+      maxAge: '1d',
+      etag: true
+    }));
+    
+    // Find index.html for client-side routing
+    let indexHtmlPath = path.resolve(validPath, "index.html");
+    
+    // If index.html doesn't exist in the validPath, try to find it
+    if (!fs.existsSync(indexHtmlPath)) {
+      const possibleIndexPaths = possiblePaths.map(p => path.resolve(p, "index.html"));
+      const validIndexPath = possibleIndexPaths.find(p => fs.existsSync(p));
+      
+      if (validIndexPath) {
+        indexHtmlPath = validIndexPath;
+        log(`Found index.html at: ${indexHtmlPath}`, "server");
+      } else {
+        log(`WARNING: Could not find index.html in any directory`, "server");
+        
+        // Create a simple handler for all routes
+        app.use('*', (_req: Request, res: Response) => {
+          res.status(200).send(`
+            <html>
+              <head><title>Da Vittorino App</title></head>
+              <body>
+                <h1>Server is running</h1>
+                <p>The server is running, but index.html is missing. Please check build configuration.</p>
+              </body>
+            </html>
+          `);
+        });
+        
+        return;
+      }
+    }
+    
+    // Fallback to index.html for client-side routing
+    app.use("*", (_req: Request, res: Response) => {
+      try {
+        if (fs.existsSync(indexHtmlPath)) {
+          res.sendFile(indexHtmlPath);
+        } else {
+          res.status(200).send("Server is running, but index.html is missing");
+        }
+      } catch (error) {
+        log(`Error serving index.html: ${error}`, "server");
+        res.status(500).send("Internal server error");
+      }
+    });
+  } catch (error) {
+    log(`Critical error in serveStatic: ${error}`, "server");
+    
+    // Provide a fallback route handler that won't crash
+    app.use('*', (_req: Request, res: Response) => {
+      res.status(500).send("Internal server error in static file serving");
+    });
   }
-  
-  // Fallback to index.html for client-side routing
-  app.use("*", (_req: Request, res: Response) => {
-    if (fs.existsSync(indexHtmlPath)) {
-      res.sendFile(indexHtmlPath);
-    } else {
-      res.status(404).send("Not found - Build files missing");
-    }
-  });
 }
