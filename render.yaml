@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: workforce-manager
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: GMAIL_USER
+        sync: false
+      - key: GMAIL_PASS
+        sync: false
+      - key: FRONTEND_URL
+        fromService:
+          name: workforce-manager
+          type: web
+          property: url
+    healthCheckPath: /api/health
+    autoDeploy: true 

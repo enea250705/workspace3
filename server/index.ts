@@ -2,16 +2,13 @@ import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes.js";
 import { setupVite, serveStatic, log } from "./vite.js";
-import cookieParser from "cookie-parser";
-import path from "path";
-import { fileURLToPath } from "url";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // CORS middleware per consentire richieste dal frontend
-app.use(((req: Request, res: Response, next: NextFunction) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   // In produzione, consenti richieste solo dal dominio Vercel
   const allowedOrigins = process.env.NODE_ENV === 'production' 
     ? [process.env.FRONTEND_URL || 'https://your-vercel-app.vercel.app'] 
@@ -31,9 +28,9 @@ app.use(((req: Request, res: Response, next: NextFunction) => {
   }
   
   next();
-}) as express.RequestHandler);
+});
 
-app.use(((req, res, next) => {
+app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
@@ -61,30 +58,18 @@ app.use(((req, res, next) => {
   });
 
   next();
-}) as express.RequestHandler);
-
-// Add health check endpoint
-app.get("/api/health", (req: Request, res: Response) => {
-  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
 });
-
-// Serve static files from the client build directory in production
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const clientBuildPath = path.join(__dirname, "../client/dist");
-
-app.use(express.static(clientBuildPath));
 
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use(((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
     throw err;
-  }) as express.ErrorRequestHandler);
+  });
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
@@ -94,11 +79,6 @@ app.use(express.static(clientBuildPath));
   } else {
     serveStatic(app);
   }
-
-  // Catch-all route to serve the client app
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(clientBuildPath, "index.html"));
-  });
 
   // Usa la porta fornita dall'ambiente (Render) o la porta 5000 come fallback
   const port = process.env.PORT || 5000;

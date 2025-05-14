@@ -23,6 +23,19 @@ import {
   insertDocumentSchema,
   insertNotificationSchema
 } from "../shared/schema.js";
+import express, { Router } from "express";
+import { db } from "./db/index.js";
+import { eq, and, desc, sql, like } from "drizzle-orm";
+import { users, shifts, schedules, timeOffRequests, documents } from "./db/schema.js";
+import { log } from "./vite.js";
+import { fromZodError } from "zod-validation-error";
+import { sendNewShiftNotification, sendUpdatedShiftNotification } from "./services/nodemailer-service.js";
+import { sendTimeOffApprovalNotification } from "./services/nodemailer-service.js";
+import { sendTimeOffRejectionNotification } from "./services/nodemailer-service.js";
+import { sendNewDocumentNotification } from "./services/nodemailer-service.js";
+import { generateUniqueId } from "./utils/id-generator.js";
+import { createMemoryStore } from "./session-store.js";
+import type { User } from "./types.js";
 
 // Initialize session store
 const MemorySessionStore = MemoryStore(session);
@@ -185,6 +198,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Store WebSocket clients by userId
   const clients = new Map<number, WebSocket[]>();
   
+  // Health check endpoint for Render
+  app.get("/api/health", (req, res) => {
+    res.status(200).json({ status: "ok" });
+  });
+  
   // Handle WebSocket connection
   wss.on("connection", (ws: WebSocket, userId: number) => {
     if (!clients.has(userId)) {
@@ -239,45 +257,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup session middleware
   app.use(
     session({
-      cookie: { maxAge: 86400000 },
-      store: storage.sessionStore as any,
+      secret: process.env.SESSION_SECRET || "keyboard cat",
       resave: false,
       saveUninitialized: false,
-      secret: process.env.SESSION_SECRET || "workforce-manager-secret"
+      store: storage.sessionStore as any,
+      cookie: {
+        maxAge: 86400000, // 24 ore
+        secure: false
+      }
     }) as any
   );
   
-  // Initialize passport
+  // Setup passport for authentication
   app.use(passport.initialize() as any);
   app.use(passport.session() as any);
   
   // Configure passport local strategy
   passport.use(
-    new LocalStrategy(
-      {
-        usernameField: "email",
-        passwordField: "password"
-      },
-      async (email: string, password: string, done: any) => {
-        try {
-          const user = await storage.authenticateUser(email, password);
-          if (!user) {
-            return done(null, false, { message: "Invalid credentials" });
-          }
-          return done(null, user);
-        } catch (err) {
-          return done(err);
+    new LocalStrategy(async (username, password, done) => {
+      try {
+        const user = await storage.getUserByUsername(username);
+        
+        if (!user) {
+          return done(null, false, { message: "Incorrect username" });
         }
+        
+        if (user.password !== password) {
+          return done(null, false, { message: "Incorrect password" });
+        }
+        
+        if (!user.isActive) {
+          return done(null, false, { message: "User account is disabled" });
+        }
+        
+        return done(null, user);
+      } catch (err) {
+        return done(err);
       }
-    )
+    })
   );
   
-  // Serialize and deserialize user
-  passport.serializeUser((user: any, done: any) => {
+  // Serialize user for session
+  passport.serializeUser((user: any, done) => {
     done(null, user.id);
   });
   
-  passport.deserializeUser(async (id: number, done: any) => {
+  // Deserialize user from session
+  passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
       done(null, user);
@@ -286,7 +312,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Auth middleware
+  // Middleware to check if user is authenticated
   const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
     if (req.isAuthenticated()) {
       return next();
@@ -294,29 +320,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(401).json({ message: "Unauthorized" });
   };
   
+  // Middleware to check if user is admin
   const isAdmin = (req: Request, res: Response, next: NextFunction) => {
-    if (req.isAuthenticated() && (req.user as any).role === "admin") {
+    if (req.isAuthenticated() && req.user && (req.user as any).role === "admin") {
       return next();
     }
     res.status(403).json({ message: "Forbidden" });
   };
   
-  // Auth routes
-  app.post("/api/login", (req: Request, res: Response, next: NextFunction) => {
-    passport.authenticate("local", (err: any, user: any, info: any) => {
-      if (err) {
-        return next(err);
-      }
-      if (!user) {
-        return res.status(401).json({ message: info.message });
-      }
-      req.logIn(user, (err) => {
-        if (err) {
-          return next(err);
-        }
-        return res.json({ user });
-      });
-    })(req, res, next);
+  // Authentication routes
+  app.post("/api/auth/login", passport.authenticate("local"), (req, res) => {
+    // Restituisci immediatamente l'utente senza aggiornare lastLogin
+    // (questo verrà gestito in modo diverso per evitare errori)
+    res.json({ user: req.user });
+  });
+  
+  app.post("/api/auth/logout", (req, res, next) => {
+    req.logout((err) => {
+      if (err) return next(err);
+      res.json({ success: true });
+    });
+  });
+  
+  app.get("/api/auth/me", (req, res) => {
+    if (req.isAuthenticated()) {
+      res.json({ user: req.user });
+    } else {
+      res.json({ user: null });
+    }
   });
   
   // User management routes
@@ -1118,7 +1149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/time-off-requests/:id/approve", isAdmin, (async (req: Request, res: Response) => {
+  app.post("/api/time-off-requests/:id/approve", isAdmin, async (req, res) => {
     try {
       const requestId = parseInt(req.params.id);
       const request = await storage.approveTimeOffRequest(requestId, (req.user as any).id);
@@ -1255,9 +1286,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Errore durante l'approvazione della richiesta:", err);
       res.status(500).json({ message: "Failed to approve request" });
     }
-  }) as RequestHandler);
+  });
   
-  app.post("/api/time-off-requests/:id/reject", isAdmin, (async (req: Request, res: Response) => {
+  app.post("/api/time-off-requests/:id/reject", isAdmin, async (req, res) => {
     try {
       const requestId = parseInt(req.params.id);
       const request = await storage.rejectTimeOffRequest(requestId, (req.user as any).id);
@@ -1310,10 +1341,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Errore durante il rifiuto della richiesta:", err);
       res.status(500).json({ message: "Failed to reject request" });
     }
-  }) as RequestHandler);
+  });
   
   // Document management routes
-  app.get("/api/documents", isAuthenticated, (async (req: Request, res: Response) => {
+  app.get("/api/documents", isAuthenticated, async (req, res) => {
     try {
       const type = req.query.type as string | undefined;
       
@@ -1329,10 +1360,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) {
       res.status(500).json({ message: "Failed to get documents" });
     }
-  }) as RequestHandler);
+  });
   
   // Endpoint di test per verificare l'invio email (solo per admin)
-  app.post("/api/test/email", isAdmin, (async (req: Request, res: Response) => {
+  app.post("/api/test/email", isAdmin, async (req, res) => {
     try {
       console.log("🧪 Richiesta test email ricevuta");
       
@@ -1356,9 +1387,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date().toISOString()
       });
     }
-  }) as RequestHandler);
+  });
   
-  app.get("/api/documents/:id", isAuthenticated, (async (req: Request, res: Response) => {
+  app.get("/api/documents/:id", isAuthenticated, async (req, res) => {
     try {
       const documentId = parseInt(req.params.id);
       const document = await storage.getDocument(documentId);
@@ -1376,9 +1407,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) {
       res.status(500).json({ message: "Failed to get document" });
     }
-  }) as RequestHandler);
+  });
   
-  app.post("/api/documents", isAdmin, (async (req: Request, res: Response) => {
+  app.post("/api/documents", isAdmin, async (req, res) => {
     try {
       const documentData = insertDocumentSchema.parse({
         ...req.body,
@@ -1425,9 +1456,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) {
       res.status(400).json({ message: "Invalid document data" });
     }
-  }) as RequestHandler);
+  });
   
-  app.delete("/api/documents/:id", isAdmin, (async (req: Request, res: Response) => {
+  app.delete("/api/documents/:id", isAdmin, async (req, res) => {
     try {
       const documentId = parseInt(req.params.id);
       const result = await storage.deleteDocument(documentId);
@@ -1440,7 +1471,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) {
       res.status(500).json({ message: "Failed to delete document" });
     }
-  }) as RequestHandler);
+  });
   
   // Notification routes
   app.get("/api/notifications", isAuthenticated, async (req, res) => {
