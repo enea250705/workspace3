@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
 
 export default {
   darkMode: ["class"],
@@ -86,5 +87,34 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
+  plugins: [
+    require("tailwindcss-animate"), 
+    require("@tailwindcss/typography"),
+    // Add a plugin that explicitly defines utility classes
+    plugin(function({ addUtilities }) {
+      const newUtilities = {
+        '.bg-background': { backgroundColor: 'hsl(var(--background))' },
+        '.text-foreground': { color: 'hsl(var(--foreground))' },
+        '.bg-card': { backgroundColor: 'hsl(var(--card))' },
+        '.text-card-foreground': { color: 'hsl(var(--card-foreground))' },
+        '.bg-popover': { backgroundColor: 'hsl(var(--popover))' },
+        '.text-popover-foreground': { color: 'hsl(var(--popover-foreground))' },
+        '.bg-primary': { backgroundColor: 'hsl(var(--primary))' },
+        '.text-primary-foreground': { color: 'hsl(var(--primary-foreground))' },
+        '.bg-secondary': { backgroundColor: 'hsl(var(--secondary))' },
+        '.text-secondary-foreground': { color: 'hsl(var(--secondary-foreground))' },
+        '.bg-muted': { backgroundColor: 'hsl(var(--muted))' },
+        '.text-muted-foreground': { color: 'hsl(var(--muted-foreground))' },
+        '.bg-accent': { backgroundColor: 'hsl(var(--accent))' },
+        '.text-accent-foreground': { color: 'hsl(var(--accent-foreground))' },
+        '.bg-destructive': { backgroundColor: 'hsl(var(--destructive))' },
+        '.text-destructive-foreground': { color: 'hsl(var(--destructive-foreground))' },
+        '.border-border': { borderColor: 'hsl(var(--border))' },
+        '.border-input': { borderColor: 'hsl(var(--input))' },
+        '.ring-ring': { ringColor: 'hsl(var(--ring))' },
+        '.ring-offset-background': { ringOffsetColor: 'hsl(var(--background))' },
+      }
+      addUtilities(newUtilities)
+    }),
+  ],
 } satisfies Config;
