@@ -11,7 +11,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // CORS middleware per consentire richieste dal frontend
-app.use((req: Request, res: Response, next: NextFunction) => {
+app.use(((req: Request, res: Response, next: NextFunction) => {
   // In produzione, consenti richieste solo dal dominio Vercel
   const allowedOrigins = process.env.NODE_ENV === 'production' 
     ? [process.env.FRONTEND_URL || 'https://your-vercel-app.vercel.app'] 
@@ -31,9 +31,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   }
   
   next();
-});
+}) as express.RequestHandler);
 
-app.use((req, res, next) => {
+app.use(((req, res, next) => {
   const start = Date.now();
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
@@ -61,7 +61,7 @@ app.use((req, res, next) => {
   });
 
   next();
-});
+}) as express.RequestHandler);
 
 // Add health check endpoint
 app.get("/api/health", (req: Request, res: Response) => {
@@ -78,13 +78,13 @@ app.use(express.static(clientBuildPath));
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  app.use(((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
     throw err;
-  });
+  }) as express.ErrorRequestHandler);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
