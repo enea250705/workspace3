@@ -1,21 +1,35 @@
 services:
   - type: web
-    name: workforce-manager
+    name: workforce-manager-server
     env: node
-    buildCommand: npm install && npm run build
+    plan: free
+    buildCommand: npm ci && npm run build
     startCommand: npm start
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 8080
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: workforce-db
+          property: connectionString
+      - key: CLIENT_URL
+        value: https://davittorino.vercel.app
       - key: SESSION_SECRET
         generateValue: true
-      - key: GMAIL_USER
+      - key: EMAIL_USER
         sync: false
-      - key: GMAIL_PASS
+      - key: EMAIL_PASS
         sync: false
-      - key: FRONTEND_URL
-        value: https://workforce-manager.onrender.com
-    healthCheckPath: /api/health
-    autoDeploy: true 
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: 587
+    autoDeploy: true
+
+databases:
+  - name: workforce-db
+    plan: free
+    ipAllowList: [] 
