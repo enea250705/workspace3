@@ -1,0 +1,64 @@
+
+i need this web fully completed
+
+1. Accesso e gestione utenti
+	•	Ogni dipendente ha un account personale (username + password). ok
+	•	Accesso protetto e gestione sicura dei dati. ok 
+	•	L’amministratore può creare/modificare/disattivare utenti. ok
+
+⸻
+
+2. Funzionalità per i dipendenti
+	•	Invio richieste per:
+	•	Ferie ok
+	•	Permessi ok
+	•	Comunicazioni legate ai turni OK
+	•	Visualizzazione del proprio orario settimanale sul portale.OK
+	•	Ricezione email automatica quando un orario viene pubblicato o modificato.OK
+	•	Notifiche push (sito/app) per:
+	•	Turno aggiornato OK
+	•	Risposte a ferie/permessi OK
+	•	Comunicazioni interne OK
+
++ POSSIBILITA' DI SCARICARE LE BUSTE PAGA FORMATO PDF
++ POSSIBILITA' DI SCARICARE I CUD FORMATO PDF
+
+
+
+⸻
+
+3. Funzionalità per l’amministratore
+	•	Creazione e gestione degli orari settimanali. OK
+	•	Possibilità di generare orari automaticamente (in base a disponibilità, ruoli, ore, ecc.). OK
+	•	Esportazione PDF riepilogativo settimanale (con nomi, giorni, orari, note). OK 
+	•	Approvazione/rifiuto ferie e permessi dal portale.OK
+	•	Invio automatico email + notifiche push a tutti i dipendenti. OK 
+	•	Pulsante “PUBBLICA” per rendere visibili i turni ai dipendenti solo quando pronto. OK
++ POSSIBILITA' DI INSERIRE BUSTE PAGA E CUD FORMATO PDF
+
+⸻
+
+4. Costruzione turni visiva (struttura ispirata al file Excel allegato)
+
+ESATTAMENTE COME IL FILE EXCEL SOLO CHE COMPAIA NEL CALENDARIO GENERALE ANCHE LE RICHIESTE APPROVATE DAL RESPONSABILE
+
+Struttura giornaliera
+	•	Visualizzazione per singolo giorno (es. LUNEDÌ). 0K
+	•	Colonna di sinistra: elenco dipendenti.
+	•	Riga in alto: fasce orarie per ogni ora (es. 04:00 - 23:00). OK APERTURA AL PUBBLICO DALLE 4:00 ALLE 24:00
+	•	Celle incrocio dipendente/orario cliccabili. CELLE CON CADENZA DI 30 MINUTI
+
+Funzionalità cella
+	•	Clic = aggiunta “X” o colore per indicare presenza lavorativa. OK
+	•	Il sistema aggiorna automaticamente le ore lavorate per ciascun dipendente. OK
+	•	Calcolo automatico delle ore totali lavorate, calcolate e richieste (come nella tabella). OK
+	•	Aggiunta colonna “NOTE” e “TOTALE”. OK
+
+Aspetto visivo
+	•	Tabella stile Excel (come da immagine allegata). OK
+	•	Colori e simboli: - COLORI DISPOSTI NELLA LEGENDA SUPERIORE DEL FILE EXEL
+	•	“X” per ore lavorate - INDIFFERENTE
+	•	“F” per ferie/permessi -  NEL FILE ATTUALE VIENE USATO LA F PER INDICARE L'ORA DI FINE TURNO (PURAMENTE PRATICO ALLA CREAZIONE DELLA FORMULA E ONON NECESSARIO)
+	•	Colorazioni visive per distinguere disponibilità/assenze OK
+
+can we do it

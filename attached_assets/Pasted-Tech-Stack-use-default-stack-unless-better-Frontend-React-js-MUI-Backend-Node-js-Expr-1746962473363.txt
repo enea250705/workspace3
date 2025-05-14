@@ -1,0 +1,68 @@
+Tech Stack (use default stack unless better):
+	•	Frontend: React.js + MUI
+	•	Backend: Node.js + Express
+	•	Database: SQLite or PostgreSQL (preferably SQLite for easy local setup)
+	•	Authentication: JWT + hashed passwords
+	•	PDF Handling: jsPDF or similar for generation + upload/download of files
+	•	Notifications: Email + Push (use dummy services if needed)
+
+⸻
+
+1. User Access & Authentication
+	•	Each employee must have a personal account (username + password)
+	•	Secure login system with token-based authentication
+	•	Admin can create, edit, or deactivate users
+
+⸻
+
+2. Employee Functionalities
+	•	Can request:
+	•	Vacations
+	•	Permissions
+	•	Internal shift-related communications
+	•	Can view their weekly schedule
+	•	Automatically receive emails when a schedule is created or updated
+	•	Get push notifications when:
+	•	A new schedule is published
+	•	A vacation/permission request is approved or rejected
+	•	A new internal message is posted
+	•	Can download PDFs of:
+	•	Pay slips
+	•	CUD documents
+
+⸻
+
+3. Admin Functionalities
+	•	Create and manage weekly schedules
+	•	Auto-generate schedules based on:
+	•	Employee availability
+	•	Roles
+	•	Total weekly hours
+	•	Approve/reject vacation/permission requests
+	•	Send automated emails and push notifications to employees
+	•	Upload PDF documents (pay slips + CUD) for each employee
+	•	Button “PUBLISH” to make the schedule visible only when finalized
+	•	Export a weekly summary PDF with:
+	•	Names
+	•	Days
+	•	Hours
+	•	Notes
+
+⸻
+
+4. Visual Shift Builder (Excel-style Grid)
+	•	Daily structure view (e.g., Monday):
+	•	Left column = employee list
+	•	Top row = time blocks (from 04:00 to 24:00)
+	•	Time cells = 30-minute intervals
+	•	Cells are clickable:
+	•	Click adds “X” or color to mark shift hours
+	•	System auto-calculates:
+	•	Total hours per employee per week
+	•	Approved hours vs requested
+	•	Add column “NOTES” and “TOTAL HOURS”
+	•	Approved vacation/permission requests should also be visible in the calendar
+	•	Use color codes and symbols inspired by Excel (legend at top of file)
+	•	“X” for worked hours
+	•	“F” optional for end-of-shift marker
+	•	Color blocks to distinguish presence, absence, availability
