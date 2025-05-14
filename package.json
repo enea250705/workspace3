@@ -6,10 +6,10 @@
   "scripts": {
     "dev": "tsx server/index.ts",
     "install-client": "cd client && npm install",
-    "build-client": "cd client && npm install && npm run build",
+    "build-client": "cd client && npm install && npx vite build",
     "build-server": "cd server && tsc",
     "copy-client": "mkdir -p dist/public && cp -r client/dist/* dist/public/ || echo 'No client files to copy'",
-    "build": "npm run install-client && npm run build-client && npm run build-server && npm run copy-client",
+    "build": "npm install && npm run install-client && npm run build-client && npm run build-server && npm run copy-client",
     "start": "node dist/index.js",
     "check": "tsc",
     "db:push": "drizzle-kit push"
