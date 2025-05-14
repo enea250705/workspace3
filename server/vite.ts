@@ -3,7 +3,23 @@ import fs from "fs";
 import path from "path";
 import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
-import viteConfig from "../vite.config";
+// Replace the problematic import with a local configuration object
+// import viteConfig from "../vite.config";
+// Define a basic vite config object
+const viteConfig = {
+  plugins: [],
+  resolve: {
+    alias: {
+      "@": path.resolve(process.cwd(), "client", "src"),
+      "@shared": path.resolve(process.cwd(), "shared"),
+    }
+  },
+  root: path.resolve(process.cwd(), "client"),
+  build: {
+    outDir: path.resolve(process.cwd(), "dist/public"),
+    emptyOutDir: true,
+  }
+};
 import { nanoid } from "nanoid";
 
 const viteLogger = createLogger();
