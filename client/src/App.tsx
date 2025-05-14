@@ -3,19 +3,19 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "./components/ui/toaster";
 import { ThemeProvider } from "next-themes";
-import { AuthProvider } from "@/contexts/auth-context";
+import { AuthProvider } from "./contexts/auth-context";
 
-import NotFound from "@/pages/not-found";
-import Login from "@/pages/login";
-import Dashboard from "@/pages/dashboard";
-import Schedule from "@/pages/schedule";
-import Users from "@/pages/users";
-import Documents from "@/pages/documents";
-import Requests from "@/pages/requests";
-import TimeOff from "@/pages/time-off";
-import MySchedule from "@/pages/my-schedule";
-import MyDocuments from "@/pages/my-documents";
-import Messages from "@/pages/messages";
+import NotFound from "./pages/not-found";
+import Login from "./pages/login";
+import Dashboard from "./pages/dashboard";
+import Schedule from "./pages/schedule";
+import Users from "./pages/users";
+import Documents from "./pages/documents";
+import Requests from "./pages/requests";
+import TimeOff from "./pages/time-off";
+import MySchedule from "./pages/my-schedule";
+import MyDocuments from "./pages/my-documents";
+import Messages from "./pages/messages";
 
 function Router() {
   return (
